@@ -1,0 +1,178 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct  5 16:36:01 2017
+
+@author: david
+"""
+import requests
+from bs4 import BeautifulSoup
+import urllib.request
+import numpy as np
+import pandas as pd
+import os
+import subprocess
+from subprocess import call
+import json
+
+
+def Gitrank () :
+    
+    
+    import requests
+    from bs4 import BeautifulSoup
+    import urllib.request
+    import numpy as np
+    import pandas as pd
+    import os
+    import subprocess
+    from subprocess import call
+    import json
+    
+    
+    url=urllib.request.urlopen("https://gist.github.com/paulmillr/2657075")
+    soup = url.read()
+    soup = BeautifulSoup(soup,"lxml")
+    
+    # le 1er de la liste commence à "2"
+    rang=soup.find_all('th')
+    ListBestGit=soup.find_all('td')
+    
+    results=np.zeros((1,256*3))
+    
+    result=[]
+    
+    rg=(rang[5].text)
+    ps=(ListBestGit[0].text)
+    nbCtr=(ListBestGit[1].text)
+    result.append(rg)
+    result.append(ps)
+    result.append(nbCtr) 
+    i=1
+    j=4
+    for i in range(255):
+        rg=(rang[i+6].text)
+        ps=(ListBestGit[j].text)
+        nbCtr=(ListBestGit[j+1].text)
+        j=j+4
+        
+        result.append(rg)
+        result.append(ps)
+        result.append(nbCtr)    
+    
+    
+    results = np.reshape(result, (256, 3))
+    Gitrk=pd.DataFrame(results)
+    
+    return Gitrk;
+
+
+
+def StRk (df):
+   
+    import requests
+    from bs4 import BeautifulSoup
+    import urllib.request
+    import numpy as np
+    import pandas as pd
+    import os
+    import subprocess
+    from subprocess import call
+    import json
+    
+    
+    #init
+    Gitrk=df
+    Gitrk[3]=0
+    
+    
+    os.popen("Accept: application/vnd.github.v3+json").read()
+    i=0
+    for i in range(256) :
+        name=(Gitrk.loc[i,1]).split(" ")
+        mr=name[0]
+        soup=os.popen("curl -i https://gitstar-ranking.com/{0}".format(mr)).read()
+        place=soup.find('<i class="fa fa-star"></i>')
+        star=soup[place+27:place+27+5]
+        s=[]
+        for elem in star:
+            if elem.isdigit():
+                s.append(elem)
+            else:
+                star=(''.join(s))
+                break
+            
+        if len(star) == 0:
+            star=0
+                    
+#        print(star)
+        star=float(star)
+        Gitrk.at[i,3]=star
+        
+    print(Gitrk.head(5))
+    Tableau=Gitrk.sort_index(by=[3], ascending=[False])
+    
+    #print(Tableau)
+    
+    
+    Tableau.to_csv("/home/david/Bureau/INFMDI721/David_Azria/Lecon4/gitstar.csv", sep='\t', encoding='utf-8')
+    #print(results[:,1])
+    
+    return Tableau;
+
+
+def GetStars (df):
+    import requests
+    from bs4 import BeautifulSoup
+    import urllib.request
+    import numpy as np
+    import pandas as pd
+    import os
+    import subprocess
+    from subprocess import call
+    import json    
+    from requests.auth import HTTPBasicAuth
+     
+    
+    Gitrk=df
+    i=0
+    for i in range(256) :
+        
+        name=(Gitrk.loc[i,1]).split(" ")
+        mr=name[0]
+     
+        
+        url=("https://api.github.com/users/{0}/repos".format(mr))
+    
+        print (url)
+        token="5f7d675602fb90053c0614f61fe2a281812dc8db"
+        #soup=requests.get(url, auth=('log','pwd'))
+        #bearer_token = 'Bearer ' + token
+        #header = {'Authorization': bearer_token}
+        #r = requests.get(url, headers=header)
+        soup=requests.get(url,  auth=('dazria/token', "5f7d675602fb90053c0614f61fe2a281812dc8db"))
+    
+
+        print(soup)
+        corps = json.loads(soup.text)
+        
+        df1= pd.DataFrame([(star['stargazers_count']) for star in corps], columns=['stargazers_count'])
+    
+        Gitrk.at[i,3]=df1.stargazers_count.mean()
+        
+    Tableau=Gitrk.sort_index(by=[3], ascending=[False])
+    
+    Tableau.to_csv("/home/david/Bureau/INFMDI721/David_Azria/Lecon4/gitstar.csv", sep='\t', encoding='utf-8')
+    return(Gitrk);
+
+
+
+
+
+
+curtime = time.time()
+#pool = mp.Pool(4)
+#print(pool.map(GetStars(Gitrank())))
+GetStars(Gitrank())
+print("time elapsed:", time.time() - curtime)
+
