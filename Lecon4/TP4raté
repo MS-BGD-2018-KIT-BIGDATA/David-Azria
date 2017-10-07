@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Oct  6 13:33:20 2017
+
+@author: david
+"""
+    
+import requests
+from bs4 import BeautifulSoup
+import urllib.request
+import numpy as np
+import pandas as pd
+import os
+import subprocess
+from subprocess import call
+import json
+import re
+    
+url=urllib.request.urlopen("https://fr.wikipedia.org/wiki/Liste_des_communes_de_France_les_plus_peupl%C3%A9es")
+soup = url.read()
+soup = BeautifulSoup(soup,"lxml")
+soup=soup.find_all('b',{"title" : ""})
+df=pd.DataFrame
+Ville=[]
+rang=[]
+i=0
+
+for i in range(101):
+     med=soup[i*2].text
+     if i!=0:    
+         Ville.append(med)
+         rang.append(i)
+     
+  
+df = pd.DataFrame(rang, columns = ["Rang"])  
+df["Ville"] = Ville  
+
+     
+df.to_csv("/home/david/Bureau/INFMDI721/David_Azria/Lecon4/Townrk.csv", sep='\t', encoding='utf-8',index=False)
+#soup=requests.get(url,  auth=("AIzaSyB0J18pG4TiuFIfX1KJ3SQRBmt3KPeqvos"))
+    #AIzaSyB0J18pG4TiuFIfX1KJ3SQRBmt3KPeqvos 
